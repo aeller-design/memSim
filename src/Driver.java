@@ -11,15 +11,13 @@ import java.nio.file.Files;
 public class Driver {
     static PageTable pageTable = new PageTable();
     static TLB tlb = new TLB();
+    static ArrayList<Integer> refSequence;
+    static byte[][] physicalMemory;
     static byte[][] backingStore = new byte[256][256];
-    // push to add, removeLast to remove oldest --16 entries
 
     static String pra = "FIFO";
     static String rsFileName;
     static int frames = 256;
-    static ArrayList<Integer> refSequence;
-    static byte[][] physicalMemory;
-
 
     public static void main(String[] args) throws IOException {
         // check for valid arguments
@@ -33,22 +31,34 @@ public class Driver {
         // initialize physical memory size to frames input
         physicalMemory = new byte[frames][256];
 
-        /*refSequence.forEach(e->{
-            System.out.println("page: " + getPage(e));
-            System.out.println("offset: " + getPageOffset(e));
-        });
-        int page = getPage(53683);
-        int off = getPageOffset(53683);
+        processRequest();
 
-        System.out.println("backing store: " + backingStore[page][off]);
-        */
+        // TODO: print final counts here
+
+    }
+
+    public static void printInfo(
+            int address, int byteReferenced, int frameNumber, byte[] frameContent) {
+        System.out.println(
+                address + ", " + byteReferenced + ", " + frameNumber + ", " + convertByteToHexadecimal(frameContent));
+    }
+
+    public static void processRequest() {
+        //int address, byteReferenced, frameNumber;
+        //byte[] frameContent;
         refSequence.forEach(entry -> {
             int frame = searchFrame(entry);
             if(frame != -1) {
                 // frame found, retrieve from memory
 
             } else {
-                // check backend store
+                // check backing store
+                // TODO: calculate frame
+                // TODO: Handle replacement algorithm here
+                // TODO: ****IMPORTANT**** REPLACE PLACEHOLDER FRAME NUMBER
+                byte[] frameContent = checkBackingStore(entry);
+                int offset = getPageOffset(entry);
+                printInfo(entry, frameContent[offset], -5, frameContent);
 
             }
         });
@@ -68,7 +78,7 @@ public class Driver {
             return frame;
         } else {
             tlb.misses++;
-            // TODO: update frame here
+            // TODO: update TLB here
         }
 
         // check page table
@@ -128,7 +138,7 @@ public class Driver {
         return page;
     }
 
-    public static void convertByteToHexadecimal(byte[] byteArray)
+    public static String convertByteToHexadecimal(byte[] byteArray)
     {
         String hex = "";
 
@@ -136,7 +146,7 @@ public class Driver {
             hex += String.format("%02X", i);
         }
 
-        System.out.print(hex);
+        return hex;
     }
 
     public static ArrayList<Integer> readInputFile(String fn) throws IOException {
