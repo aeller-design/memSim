@@ -2,6 +2,11 @@ public class PageTableEntry {
     int frame;
     boolean validBit;
 
+    PageTableEntry(int frame, boolean validBit) {
+        this.frame = frame;
+        this.validBit = validBit;
+    }
+
     public int getFrame() {
         return frame;
     }

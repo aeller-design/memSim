@@ -10,9 +10,9 @@ import java.nio.file.Files;
 
 public class Driver {
     static PageTable pageTable = new PageTable();
+    static PhysicalMemory physicalMemory;
     static TLB tlb = new TLB();
     static ArrayList<Integer> refSequence;
-    static byte[][] physicalMemory;
     static byte[][] backingStore = new byte[256][256];
 
     static String pra = "FIFO";
@@ -20,6 +20,16 @@ public class Driver {
     static int frames = 256;
 
     public static void main(String[] args) throws IOException {
+        // initialize all tables
+        initialize(args);
+
+        processRequest();
+
+        // TODO: print final counts here
+
+    }
+
+    public static void initialize(String[] args) throws IOException {
         // check for valid arguments
         if(!parseArgs(args))
             return;
@@ -29,12 +39,7 @@ public class Driver {
         // read reference sequence file
         refSequence = readInputFile(rsFileName);
         // initialize physical memory size to frames input
-        physicalMemory = new byte[frames][256];
-
-        processRequest();
-
-        // TODO: print final counts here
-
+        physicalMemory = new PhysicalMemory(frames);
     }
 
     public static void printInfo(
@@ -48,19 +53,33 @@ public class Driver {
         //byte[] frameContent;
         refSequence.forEach(entry -> {
             int frame = searchFrame(entry);
+            byte[] frameContent;
             if(frame != -1) {
                 // frame found, retrieve from memory
-
+                frameContent = physicalMemory.get(frame);
             } else {
                 // check backing store
-                // TODO: calculate frame
-                // TODO: Handle replacement algorithm here
-                // TODO: ****IMPORTANT**** REPLACE PLACEHOLDER FRAME NUMBER
-                byte[] frameContent = checkBackingStore(entry);
-                int offset = getPageOffset(entry);
-                printInfo(entry, frameContent[offset], -5, frameContent);
+                frameContent = checkBackingStore(entry);
+
+                // if physical memory has space
+                if(!physicalMemory.isFull()){
+                    frame = physicalMemory.getIndex();
+                    physicalMemory.add(frame, frameContent);
+                } else {
+                    // physical memory is full, run replacement algorithm
+                    // TODO: Handle replacement algorithm here
+                    // TODO: ****IMPORTANT**** REPLACE PLACEHOLDER FRAME NUMBER
+                    frame = -5;
+                }
+
+                // update page table and tlb
+                pageTable.add(getPage(entry), new PageTableEntry(frame, true));
+
+
 
             }
+            int offset = getPageOffset(entry);
+            printInfo(entry, frameContent[offset], frame, frameContent);
         });
     }
 
@@ -86,6 +105,10 @@ public class Driver {
         if(frame != -1) {
             // page table hit
             pageTable.hits++;
+
+            // update TLB
+            tlb.add(new PageFrameBlock(page, frame));
+
             return frame;
         }
         else {

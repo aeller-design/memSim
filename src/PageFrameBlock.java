@@ -2,8 +2,9 @@ public class PageFrameBlock {
     private int page;
     private int frame;
 
-    public PageFrameBlock(int page) {
+    public PageFrameBlock(int page, int frame) {
         this.page = page;
+        this.frame = frame;
     }
 
     public int getPage() {

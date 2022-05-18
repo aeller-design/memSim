@@ -17,5 +17,12 @@ public class TLB {
 
         return frame.get();
     }
+
+    void add(PageFrameBlock pfb){
+        if(tlb.size() == 16)
+            tlb.removeFirst();
+
+        tlb.addLast(pfb);
+    }
 }
 

@@ -12,4 +12,8 @@ public class PageTable {
         }
         return frame;
     }
+
+    public void add(int i, PageTableEntry pte) {
+        pageFrameBlocks[i] = pte;
+    }
 }
