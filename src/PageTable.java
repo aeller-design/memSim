@@ -1,9 +1,6 @@
 public class PageTable {
     public PageTableEntry[] pageFrameBlocks = new PageTableEntry[256];
 
-    int hits = 0;
-    int misses = 0;
-
     public int getFrame(int page) {
         int frame = -1;
         if(pageFrameBlocks[page] != null){
@@ -15,5 +12,19 @@ public class PageTable {
 
     public void add(int i, PageTableEntry pte) {
         pageFrameBlocks[i] = pte;
+    }
+
+    public void remove(int frame) {
+
+    }
+
+    void print() {
+        System.out.println("Page Table:");
+        for(int i = 0; i < pageFrameBlocks.length; i++) {
+            if(pageFrameBlocks[i] != null){
+                System.out.print(i + ", ");
+                pageFrameBlocks[i].print();
+            }
+        }
     }
 }

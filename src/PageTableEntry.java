@@ -22,4 +22,8 @@ public class PageTableEntry {
     public void setValidBit(boolean validBit) {
         this.validBit = validBit;
     }
+
+    public void print() {
+        System.out.println(frame + ", " + validBit);
+    }
 }

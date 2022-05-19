@@ -29,4 +29,5 @@ public class PhysicalMemory {
     public int getIndex() {
         return index;
     }
+
 }

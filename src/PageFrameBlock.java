@@ -22,4 +22,8 @@ public class PageFrameBlock {
     public void setFrame(int frame) {
         this.frame = frame;
     }
+
+    public void print() {
+        System.out.println(page + ", " + frame);
+    }
 }

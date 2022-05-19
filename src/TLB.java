@@ -4,8 +4,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TLB {
     ArrayDeque<PageFrameBlock> tlb = new ArrayDeque<>();
 
-    int hits = 0;
-    int misses = 0;
+    float hits = 0;
+    float misses = 0;
 
     Integer getFrame(int page){
         AtomicInteger frame = new AtomicInteger(-1);
@@ -23,6 +23,11 @@ public class TLB {
             tlb.removeFirst();
 
         tlb.addLast(pfb);
+    }
+
+    void print() {
+        System.out.println("TLB:");
+        tlb.forEach(PageFrameBlock::print);
     }
 }
 

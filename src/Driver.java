@@ -11,22 +11,21 @@ import java.nio.file.Files;
 public class Driver {
     static PageTable pageTable = new PageTable();
     static PhysicalMemory physicalMemory;
+    static ReplacementAlgorithm replacementAlgorithm;
     static TLB tlb = new TLB();
     static ArrayList<Integer> refSequence;
     static byte[][] backingStore = new byte[256][256];
 
+
     static String pra = "FIFO";
     static String rsFileName;
     static int frames = 256;
+    static float pageFaults = 0;
 
     public static void main(String[] args) throws IOException {
-        // initialize all tables
         initialize(args);
-
         processRequest();
-
-        // TODO: print final counts here
-
+        printResults(refSequence.size(),pageFaults,tlb.hits,tlb.misses);
     }
 
     public static void initialize(String[] args) throws IOException {
@@ -40,6 +39,8 @@ public class Driver {
         refSequence = readInputFile(rsFileName);
         // initialize physical memory size to frames input
         physicalMemory = new PhysicalMemory(frames);
+
+        replacementAlgorithm = new ReplacementAlgorithm(frames, pra);
     }
 
     public static void printInfo(
@@ -49,8 +50,6 @@ public class Driver {
     }
 
     public static void processRequest() {
-        //int address, byteReferenced, frameNumber;
-        //byte[] frameContent;
         refSequence.forEach(entry -> {
             int frame = searchFrame(entry);
             byte[] frameContent;
@@ -61,25 +60,31 @@ public class Driver {
                 // check backing store
                 frameContent = checkBackingStore(entry);
 
+                // increment fifo
+                replacementAlgorithm.fifoCount++;
+
                 // if physical memory has space
                 if(!physicalMemory.isFull()){
                     frame = physicalMemory.getIndex();
                     physicalMemory.add(frame, frameContent);
                 } else {
                     // physical memory is full, run replacement algorithm
-                    // TODO: Handle replacement algorithm here
-                    // TODO: ****IMPORTANT**** REPLACE PLACEHOLDER FRAME NUMBER
-                    frame = -5;
+                    frame = replacementAlgorithm.get();
+
+                    // TODO: remove entry from page table (set present bit to false)
                 }
 
                 // update page table and tlb
                 pageTable.add(getPage(entry), new PageTableEntry(frame, true));
-
-
+                tlb.add(new PageFrameBlock(getPage(entry),frame));
 
             }
             int offset = getPageOffset(entry);
             printInfo(entry, frameContent[offset], frame, frameContent);
+
+            // if LRU, update usage queue
+            if(pra.equals("LRU"))
+                replacementAlgorithm.add(frame);
         });
     }
 
@@ -97,23 +102,19 @@ public class Driver {
             return frame;
         } else {
             tlb.misses++;
-            // TODO: update TLB here
         }
 
         // check page table
         frame = pageTable.getFrame(page);
         if(frame != -1) {
             // page table hit
-            pageTable.hits++;
-
             // update TLB
             tlb.add(new PageFrameBlock(page, frame));
 
             return frame;
         }
         else {
-            pageTable.misses++;
-            // TODO: update page table here
+            pageFaults++;
         }
 
         // not in TLB or PT --check backend store
@@ -155,9 +156,9 @@ public class Driver {
 
     public static int getPageOffset(int num){
         char bin = (char)num;
-        System.out.println(Integer.toBinaryString(num));
+        //System.out.println(Integer.toBinaryString(num));
         int page = bin & 0xFF;
-        System.out.println(Integer.toBinaryString(page));
+        //System.out.println(Integer.toBinaryString(page));
         return page;
     }
 
@@ -192,4 +193,15 @@ public class Driver {
     }
 
     public static void printRefSeq() {refSequence.forEach(System.out::println);}
+
+    public static void printResults(int numAddresses, float pageFaults, float tlbHits, float tlbMisses){
+        float pageFaultRate = pageFaults/numAddresses;
+        float tlbHitRate = tlbHits/numAddresses;
+        System.out.println("Number of Translated Addresses = " + numAddresses);
+        System.out.format("Page Faults = %.0f%n" ,pageFaults);
+        System.out.format("Page Fault Rate = %.3f%n", pageFaultRate);
+        System.out.format("TLB Hits = %.0f%n", tlbHits);
+        System.out.format("TLB Misses = %.0f%n", tlbMisses);
+        System.out.format("TLB Hit Rate = %.3f%n", tlbHitRate);
+    }
 }
