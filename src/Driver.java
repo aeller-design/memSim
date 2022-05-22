@@ -23,15 +23,24 @@ public class Driver {
     static float pageFaults = 0;
 
     public static void main(String[] args) throws IOException {
-        initialize(args);
+        if(!initialize(args))
+            return;
         processRequest();
         printResults(refSequence.size(),pageFaults,tlb.hits,tlb.misses);
+
+        pageTable.print();
+        physicalMemory.print();
+
     }
 
-    public static void initialize(String[] args) throws IOException {
+    public static boolean initialize(String[] args) throws IOException {
         // check for valid arguments
         if(!parseArgs(args))
-            return;
+            return false;
+        if(pra.equals("OPT")) {
+            System.out.println("OPT not implemented");
+            return false;
+        }
 
         // read backing store file
         readBin("BACKING_STORE.bin");
@@ -41,6 +50,8 @@ public class Driver {
         physicalMemory = new PhysicalMemory(frames);
 
         replacementAlgorithm = new ReplacementAlgorithm(frames, pra);
+
+        return true;
     }
 
     public static void printInfo(
@@ -53,7 +64,9 @@ public class Driver {
         refSequence.forEach(entry -> {
             int frame = searchFrame(entry);
             byte[] frameContent;
-            if(frame != -1) {
+            // frame == -1: frame not found in page table or tlb
+            // frame == -2: frame not found in tlb but found in page table, valid bit set to false;
+            if(frame > -1) {
                 // frame found, retrieve from memory
                 frameContent = physicalMemory.get(frame);
             } else {
@@ -66,20 +79,24 @@ public class Driver {
                 // if physical memory has space
                 if(!physicalMemory.isFull()){
                     frame = physicalMemory.getIndex();
-                    physicalMemory.add(frame, frameContent);
                 } else {
                     // physical memory is full, run replacement algorithm
+                    // get frame of address to be evicted
                     frame = replacementAlgorithm.get();
 
-                    // TODO: remove entry from page table (set present bit to false)
+                    // set valid bit to false of evicted frame
+                    pageTable.remove(physicalMemory.getPage(frame));
                 }
+                // add to memory
+                physicalMemory.add(frame, frameContent, getPage(entry));
 
                 // update page table and tlb
-                pageTable.add(getPage(entry), new PageTableEntry(frame, true));
+                pageTable.add(getPage(entry), frame);
                 tlb.add(new PageFrameBlock(getPage(entry),frame));
 
             }
             int offset = getPageOffset(entry);
+            System.out.print(getPage(entry) + " -- ");
             printInfo(entry, frameContent[offset], frame, frameContent);
 
             // if LRU, update usage queue

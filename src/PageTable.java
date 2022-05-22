@@ -3,19 +3,30 @@ public class PageTable {
 
     public int getFrame(int page) {
         int frame = -1;
-        if(pageFrameBlocks[page] != null){
+        if((pageFrameBlocks[page] != null) && (isInMemory(page))){
             frame = pageFrameBlocks[page].getFrame();
-            pageFrameBlocks[page].setValidBit(true);
+            //pageFrameBlocks[page].setValidBit(true);
         }
         return frame;
     }
-
-    public void add(int i, PageTableEntry pte) {
-        pageFrameBlocks[i] = pte;
+    public boolean contains(int page) {
+        return pageFrameBlocks[page] != null;
+    }
+    public void add(int page, int frame) {
+        if(contains(page)){
+            pageFrameBlocks[page].validBit = true;
+        }
+        else {
+            pageFrameBlocks[page] = new PageTableEntry(frame, true);
+        }
     }
 
-    public void remove(int frame) {
+    public boolean isInMemory(int page) {
+        return pageFrameBlocks[page].validBit;
+    }
 
+    public void remove(int page) {
+        pageFrameBlocks[page].validBit = false;
     }
 
     void print() {
